@@ -1,7 +1,6 @@
 var cluster = require("cluster");
 var events = require("events");
 var phantom = require("phantom");
-
 var is = function (type, val, def) {
     return val !== null && typeof val === type ? val : def;
 };
@@ -146,14 +145,15 @@ var Worker = function (opts) {
     this._pageClicker = 0;
     this._pages = {};
     
-    phantom.create({
-        parameters: opts.phantomFlags,
-        binary: opts.phantomBinary,
-        port: is("number", opts.phantomPort, 12300) + (cluster.worker.id % 200),
-        onStdout: function () {},
-        onStderr: function () {},
-        onExit: process.exit
-    }, function (proc) {
+    // {
+    //     parameters: opts.phantomFlags,
+    //     binary: opts.phantomBinary,
+    //     port: is("number", opts.phantomPort, 12300) + (cluster.worker.id % 200),
+    //     onStdout: function () {},
+    //     onStderr: function () {},
+    //     onExit: process.exit
+    // }
+    phantom.create().then((proc)=>{
         this.phantom = proc;
         
         for (var i = this._pageCount; i--;) {
@@ -162,7 +162,7 @@ var Worker = function (opts) {
                 worker: cluster.worker.id
             });
         }
-    }.bind(this));
+    })
     
     process.on("message", this._onMessage.bind(this));
     
@@ -178,11 +178,11 @@ Worker.prototype._onMessage = function (msg) {
         return;
     }
     
-    this.phantom.createPage(function (page) {
+    this.phantom.createPage().then((page)=> {
         this._pageClicker++;
         this._pages[msg.id] = page;
         this.emit("queue", page, msg.data, this._done.bind(this, msg.id));
-    }.bind(this));
+    });
 };
 
 Worker.prototype._done = function (id, err, data) {
