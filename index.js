@@ -153,7 +153,13 @@ var Worker = function (opts) {
     //     onStderr: function () {},
     //     onExit: process.exit
     // }
-    phantom.create().then((proc)=>{
+
+    var flags = [];
+    for(var flag in opts.phantomFlags){
+        flags.push("--"+flag+"="+opts.phantomFlags[flag])
+    }
+
+    phantom.create(flags).then((proc)=>{
         this.phantom = proc;
         
         for (var i = this._pageCount; i--;) {
