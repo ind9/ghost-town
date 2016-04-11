@@ -168,6 +168,9 @@ var Worker = function (opts) {
                 worker: cluster.worker.id
             });
         }
+    }).catch((error)=>{
+        console.log(error)
+        this.phantom.exit()
     })
     
     process.on("message", this._onMessage.bind(this));
