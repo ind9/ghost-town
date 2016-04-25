@@ -1,6 +1,7 @@
 var cluster = require("cluster");
 var events = require("events");
 var phantom = require("phantom");
+
 var is = function (type, val, def) {
     return val !== null && typeof val === type ? val : def;
 };
@@ -64,11 +65,6 @@ Master.prototype._onExit = function (worker) {
             clearTimeout(item.timeout);
             this.queue(item.data, true, item.done, item.retries);
         }
-    }
-    if(worker){
-        var index = this._workerQueue.findIndex((x)=>{return (x.id===worker.id)})
-        if(index>=0)
-            this._workerQueue.splice(index,1)
     }
     
     if (this.isRunning) {
@@ -144,22 +140,16 @@ var Worker = function (opts) {
     this._pageCount = is("number", opts.pageCount, 1);
     this._pageClicker = 0;
     this._pages = {};
-    
-    // {
-    //     parameters: opts.phantomFlags,
-    //     binary: opts.phantomBinary,
-    //     port: is("number", opts.phantomPort, 12300) + (cluster.worker.id % 200),
-    //     onStdout: function () {},
-    //     onStderr: function () {},
-    //     onExit: process.exit
-    // }
 
-    var flags = [];
-    for(var flag in opts.phantomFlags){
-        flags.push("--"+flag+"="+opts.phantomFlags[flag])
+    //new phantom takes arguments as array
+    if(opts.phantomFlags){
+        var flags = []
+        for(var flag in opts.phantomFlags){
+            flags.push("--"+flag+"="+opts.phantomFlags[flag])
+        }
     }
-
-    phantom.create(flags).then((proc)=>{
+    
+    phantom.create(flags).then(function (proc) {
         this.phantom = proc;
         
         for (var i = this._pageCount; i--;) {
@@ -168,30 +158,32 @@ var Worker = function (opts) {
                 worker: cluster.worker.id
             });
         }
-    }).catch((error)=>{
-        console.log(error)
-        this.phantom.exit()
-    })
+    }.bind(this));
     
     process.on("message", this._onMessage.bind(this));
     
     if (this._workerShift !== -1) {
-        setTimeout(process.exit, this._workerShift);
+        setTimeout(this._exitProcess.bind(this), this._workerShift);
     }
 };
 
 Worker.prototype = Object.create(events.EventEmitter.prototype);
+
+Worker.prototype._exitProcess = function (){
+    this.phantom.exit()
+    process.exit()
+}
 
 Worker.prototype._onMessage = function (msg) {
     if (is("object", msg, {}).ghost !== "town") {
         return;
     }
     
-    this.phantom.createPage().then((page)=> {
+    this.phantom.createPage().then(function (page) {
         this._pageClicker++;
         this._pages[msg.id] = page;
         this.emit("queue", page, msg.data, this._done.bind(this, msg.id));
-    });
+    }.bind(this));
 };
 
 Worker.prototype._done = function (id, err, data) {
@@ -211,7 +203,7 @@ Worker.prototype._done = function (id, err, data) {
     });
     
     if (this._pageClicker >= this._workerDeath) {
-        process.exit();
+        this._exitProcess()
     }
 };
 
