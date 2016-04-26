@@ -170,8 +170,8 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
+    this.phantom.process.on("exit", process.exit)
     this.phantom.exit()
-    this.phantom.process.on("close", process.exit)
 }
 
 Worker.prototype._onMessage = function (msg) {
