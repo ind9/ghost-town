@@ -13,7 +13,7 @@
         "test": "mocha -R list -s 60s"
     },
     "dependencies": {
-        "phantom": "~2.0.10"
+        "phantom": "~2.1.2"
     },
     "devDependencies": {
         "async": "~0.9.0",
