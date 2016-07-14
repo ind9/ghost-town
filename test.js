@@ -271,7 +271,7 @@ if (cluster.isMaster) {
                     expect(cluster.workers).to.not.have.keys(orig);
                     
                     next();
-                }, 500);
+                }, 600);
             });
             
             it("should support pageCount", function (next) {

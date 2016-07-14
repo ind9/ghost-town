@@ -1,6 +1,7 @@
 var cluster = require("cluster");
 var events = require("events");
 var phantom = require("phantom");
+var Nightmare = require("nightmare");
 
 var is = function (type, val, def) {
     return val !== null && typeof val === type ? val : def;
@@ -118,7 +119,6 @@ Master.prototype._process = function () {
         item.worker = worker;
         item.timeout = setTimeout(this._onTimeout.bind(this, item), this._itemTimeout);
         this._items[item.id] = item;
-        
         worker.send({
             ghost: "town",
             id: item.id,
@@ -148,7 +148,8 @@ var Worker = function (opts) {
             flags.push("--"+flag+"="+opts.phantomFlags[flag])
         }
     }
-    
+
+    this.nightmare = Nightmare(opts.nightmareFlags);
     phantom.create(flags).then(function (proc) {
         this.phantom = proc;
         
@@ -159,7 +160,7 @@ var Worker = function (opts) {
             });
         }
     }.bind(this));
-    
+
     process.on("message", this._onMessage.bind(this));
     
     if (this._workerShift !== -1) {
@@ -170,6 +171,7 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
+    this.nightmare.end();
     this.phantom.process.on("exit", process.exit)
     this.phantom.exit()
 }
@@ -178,20 +180,30 @@ Worker.prototype._onMessage = function (msg) {
     if (is("object", msg, {}).ghost !== "town") {
         return;
     }
-    
-    this.phantom.createPage().then(function (page) {
-        this._pageClicker++;
-        this._pages[msg.id] = page;
-        this.emit("queue", page, msg.data, this._done.bind(this, msg.id));
-    }.bind(this));
+    var ajaxClient = msg.data.ajaxClient;
+    switch(ajaxClient){
+        case 'nightmare':
+            this._pageClicker++;
+            this._pages[msg.id] = this.nightmare;
+            this.emit("queue", this.nightmare, msg.data, this._done.bind(this, msg.id, 'nightmare'));
+        break;
+        default:
+            this.phantom.createPage().then(function (page) {
+                this._pageClicker++;
+                this._pages[msg.id] = page;
+                this.emit("queue", page, msg.data, this._done.bind(this, msg.id, 'phantom'));
+            }.bind(this));
+    }
 };
 
-Worker.prototype._done = function (id, err, data) {
+Worker.prototype._done = function (id, ajaxClient, err, data) {
+   
     if (!this._pages[id]) {
         return;
     }
-    
-    this._pages[id].close();
+
+    if(ajaxClient != 'nightmare')
+        this._pages[id].close();
     delete this._pages[id];
     
     process.send({
