@@ -361,6 +361,21 @@ if (cluster.isMaster) {
             }, next);
         });
     });
+
+    describe("Nightmare", function(){
+        it("should initialize nightmare module", function(next){
+            this.timeout(15000)
+            townSend = {};
+            var town = ghost({"pageDeath": 3, "pageTries": 0, "nightmareFlags": {
+               "show": false,
+               "maxWaitTime" : 4000
+            }});
+            town.queue({"ajaxClient": "nightmare"}, function (err) {
+                expect(town._workerCount).to.equal(4);
+                next();
+            });
+        })
+    })
 } else {
     var townTest = {
         pid: function (town, page, data, next) {

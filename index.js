@@ -149,7 +149,8 @@ var Worker = function (opts) {
         }
     }
 
-    this.nightmare = Nightmare(opts.nightmareFlags);
+    if(opts.nightmareFlags)
+        this.nightmare = Nightmare(opts.nightmareFlags);
     phantom.create(flags).then(function (proc) {
         this.phantom = proc;
         
@@ -171,7 +172,8 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
-    this.nightmare.end();
+    if(this.nightmare)
+        this.nightmare.end();
     this.phantom.process.on("exit", process.exit)
     this.phantom.exit()
 }
@@ -197,7 +199,6 @@ Worker.prototype._onMessage = function (msg) {
 };
 
 Worker.prototype._done = function (id, ajaxClient, err, data) {
-   
     if (!this._pages[id]) {
         return;
     }
@@ -213,7 +214,6 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
         err: err,
         data: data
     });
-    
     if (this._pageClicker >= this._workerDeath) {
         this._exitProcess()
     }
