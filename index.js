@@ -149,8 +149,27 @@ var Worker = function (opts) {
         }
     }
 
-    if(opts.nightmareFlags)
+    if(opts.nightmareFlags){
+        Nightmare.action(
+            'monitorRequest',
+            function(name, options, parent, win, renderer, done) {
+              win.webContents.session.webRequest.onBeforeRequest(
+                [],
+                function(details, callback) {
+                    var blockMatch = details.url.match(new RegExp(options.blockedResources));
+                    callback({cancel: blockMatch ? true : false})
+                }
+              );
+              done();
+            },
+            function(done) {
+              done();
+              return this;
+            }
+        );
+        opts.nightmareFlags.blockedResources = (opts.blockedResources || []).join('|');
         this.nightmare = Nightmare(opts.nightmareFlags);
+    }
     phantom.create(flags).then(function (proc) {
         this.phantom = proc;
         
