@@ -183,11 +183,9 @@ Worker.prototype._onMessage = function (clients, msg) {
 };
 
 Worker.prototype._done = function (id, ajaxClient, err, data) {
-    console.log("_done")
     if (!this._pages[id]) {
         return;
-    }
-    console.log(ajaxClient)
+    } 
     if(ajaxClient.close)
         ajaxClient.close();
     delete this._pages[id];
