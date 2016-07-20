@@ -1,7 +1,6 @@
 var cluster = require("cluster");
 var events = require("events");
-var phantom = require("phantom");
-var Nightmare = require("nightmare");
+var _  = require("lodash");
 
 var is = function (type, val, def) {
     return val !== null && typeof val === type ? val : def;
@@ -127,11 +126,11 @@ Master.prototype._process = function () {
     }
 };
 
-var Worker = function (opts) {
+var Worker = function (opts, clients) {
     opts = is("object", opts, {});
     
     events.EventEmitter.call(this);  
-    
+    var me = this;
     this.isMaster = false;
     
     this._workerDeath = is("number", opts.workerDeath, 25);
@@ -141,89 +140,56 @@ var Worker = function (opts) {
     this._pageClicker = 0;
     this._pages = {};
 
-    //new phantom takes arguments as array
-    if(opts.phantomFlags){
-        var flags = []
-        for(var flag in opts.phantomFlags){
-            flags.push("--"+flag+"="+opts.phantomFlags[flag])
-        }
-    }
-
-    if(opts.nightmareFlags){
-        Nightmare.action(
-            'monitorRequest',
-            function(name, options, parent, win, renderer, done) {
-              win.webContents.session.webRequest.onBeforeRequest(
-                [],
-                function(details, callback) {
-                    var blockMatch = details.url.match(new RegExp(options.blockedResources));
-                    callback({cancel: blockMatch ? true : false})
-                }
-              );
-              done();
-            },
-            function(done) {
-              done();
-              return this;
+    _.forEach(clients, function(client, clientName){
+        client.create()
+        .then(function (proc) {
+            for (var i = me._pageCount; i--;) {
+                process.send({
+                    ghost: "town",
+                    worker: cluster.worker.id
+                });
             }
-        );
-        opts.nightmareFlags.blockedResources = (opts.blockedResources || []).join('|');
-        this.nightmare = Nightmare(opts.nightmareFlags);
-    }
-    phantom.create(flags).then(function (proc) {
-        this.phantom = proc;
-        
-        for (var i = this._pageCount; i--;) {
-            process.send({
-                ghost: "town",
-                worker: cluster.worker.id
-            });
-        }
-    }.bind(this));
+        }.bind(this));
+    })
 
-    process.on("message", this._onMessage.bind(this));
+    process.on("message", this._onMessage.bind(this, clients));
     
     if (this._workerShift !== -1) {
-        setTimeout(this._exitProcess.bind(this), this._workerShift);
+        setTimeout(this._exitProcess.bind(this, clients), this._workerShift);
     }
 };
 
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
-Worker.prototype._exitProcess = function (){
-    if(this.nightmare)
-        this.nightmare.end();
-    this.phantom.process.on("exit", process.exit)
-    this.phantom.exit()
+Worker.prototype._exitProcess = function (clients){
+    _.forEach(clients, function(client, clientName){
+        client.exit({"onExit": process.exit});
+    })
 }
 
-Worker.prototype._onMessage = function (msg) {
+Worker.prototype._onMessage = function (clients, msg) {
+    var me = this;
     if (is("object", msg, {}).ghost !== "town") {
         return;
     }
     var ajaxClient = msg.data.ajaxClient;
-    switch(ajaxClient){
-        case 'nightmare':
-            this._pageClicker++;
-            this._pages[msg.id] = this.nightmare;
-            this.emit("queue", this.nightmare, msg.data, this._done.bind(this, msg.id, 'nightmare'));
-        break;
-        default:
-            this.phantom.createPage().then(function (page) {
-                this._pageClicker++;
-                this._pages[msg.id] = page;
-                this.emit("queue", page, msg.data, this._done.bind(this, msg.id, 'phantom'));
-            }.bind(this));
-    }
+    if(!clients[ajaxClient]) return;
+    clients[ajaxClient].createPage()
+    .then(function(data){
+        me._pageClicker++;
+        me._pages[msg.id] = data.page;
+        me.emit("queue", data.page, msg.data, me._done.bind(me, msg.id, clients[ajaxClient]));
+    })
 };
 
 Worker.prototype._done = function (id, ajaxClient, err, data) {
+    console.log("_done")
     if (!this._pages[id]) {
         return;
     }
-
-    if(ajaxClient != 'nightmare')
-        this._pages[id].close();
+    console.log(ajaxClient)
+    if(ajaxClient.close)
+        ajaxClient.close();
     delete this._pages[id];
     
     process.send({
@@ -238,6 +204,6 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
     }
 };
 
-module.exports = function (opts) {
-    return cluster.isMaster ? new Master(opts) : new Worker(opts);
+module.exports = function (opts, clients) {
+    return cluster.isMaster ? new Master(opts) : new Worker(opts, clients);
 };

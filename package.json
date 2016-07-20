@@ -1,24 +1,27 @@
 {
-    "name": "ghost-town",
-    "version": "3.0.0",
-    "description": "Simple queued & clustered PhantomJS processing.",
-    "keywords": ["cluster", "phantomjs", "queue"],
-    "homepage": "https://github.com/buzzvil/ghost-town",
-    "bugs": "https://github.com/buzzvil/ghost-town/issues",
-    "license": "MIT",
-    "author": "Teddy Cross <teddy@tkaz.ec> (http://tkaz.ec)",
-    "main": "./index",
-    "repository": "git://github.com/buzzvil/ghost-town",
-    "scripts": {
-        "test": "mocha -R list -s 60s"
-    },
-    "dependencies": {
-        "phantom": "~2.1.2",
-        "nightmare": "^2.5.3"
-    },
-    "devDependencies": {
-        "async": "~0.9.0",
-        "chai": "~1.10.0",
-        "mocha": "~2.1.0"
-    }
+  "name": "ghost-town",
+  "version": "3.0.0",
+  "description": "Simple queued & clustered PhantomJS processing.",
+  "keywords": [
+    "cluster",
+    "phantomjs",
+    "queue"
+  ],
+  "homepage": "https://github.com/buzzvil/ghost-town",
+  "bugs": "https://github.com/buzzvil/ghost-town/issues",
+  "license": "MIT",
+  "author": "Teddy Cross <teddy@tkaz.ec> (http://tkaz.ec)",
+  "main": "./index",
+  "repository": "git://github.com/buzzvil/ghost-town",
+  "scripts": {
+    "test": "mocha -R list -s 60s"
+  },
+  "dependencies": {
+    "lodash": "^4.13.1"
+  },
+  "devDependencies": {
+    "async": "~0.9.0",
+    "chai": "~1.10.0",
+    "mocha": "~2.1.0"
+  }
 }
