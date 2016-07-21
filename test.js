@@ -44,7 +44,7 @@ if (cluster.isMaster) {
             
             it("should support pageDeath", function (next) {
                 townSend = {};
-                var town = ghost({ pageDeath: 100, pageTries: 0 });
+                var town = ghost({ pageDeath: 10, pageTries: 0 });
                 
                 town.queue(0, function (err) {
                     expect(err).to.be.an.instanceof(Error);
