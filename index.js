@@ -168,7 +168,11 @@ var Worker = function (opts) {
             }
         );
         opts.nightmareFlags.blockedResources = (opts.blockedResources || []).join('|');
-        this.nightmare = Nightmare(opts.nightmareFlags);
+        this.nightmare = function(options){
+            var nightmareOpts = Object.assign({}, opts.nightmareFlags, options)
+            return Nightmare(nightmareOpts);   
+        }
+        
     }
     phantom.create(flags).then(function (proc) {
         this.phantom = proc;
