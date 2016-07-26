@@ -50,7 +50,7 @@ Master.prototype._onMessage = function (msg) {
 Master.prototype._onTimeout = function (item) {
     delete this._items[item.id];
     
-    if (item.retries === this._itemRetries) {
+    if (item.retries >= this._itemRetries) {
         item.done(new Error("[ghost-town] max pageTries"));
     } else {
         this.queue(item.data, true, item.done, item.retries + 1);
@@ -150,6 +150,7 @@ var Worker = function (opts) {
     }
 
     if(opts.nightmareFlags){
+        var self = this;
         Nightmare.action(
             'monitorRequest',
             function(name, options, parent, win, renderer, done) {
@@ -170,7 +171,8 @@ var Worker = function (opts) {
         opts.nightmareFlags.blockedResources = (opts.blockedResources || []).join('|');
         this.nightmare = function(options){
             var nightmareOpts = Object.assign({}, opts.nightmareFlags, options)
-            return Nightmare(nightmareOpts);   
+            self.nightmare = Nightmare(nightmareOpts)
+            return self.nightmare
         }
         
     }
@@ -195,7 +197,7 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
-    if(this.nightmare)
+    if(this.nightmare && this.nightmare.end)
         this.nightmare.end();
     this.phantom.process.on("exit", process.exit)
     this.phantom.exit()
