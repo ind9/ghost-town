@@ -51,6 +51,7 @@ Master.prototype._onTimeout = function (item) {
     delete this._items[item.id];
     
     if (item.retries === this._itemRetries) {
+        item.worker.kill(0)
         item.done(new Error("[ghost-town] max pageTries"));
     } else {
         this.queue(item.data, true, item.done, item.retries + 1);
