@@ -35,13 +35,16 @@ Master.prototype._onMessage = function (msg) {
     if (is("object", msg, {}).ghost !== "town") {
         return;
     }
-    
+    var worker = cluster.workers[msg.worker]
     var item = this._items[msg.id];
     if (item) {
         delete this._items[msg.id];
         clearTimeout(item.timeout);
         item.done(msg.err, msg.data);
     }
+
+    if(worker)
+        worker.send({"ghost": "town","ack": true})
     
     this._workerQueue.push(cluster.workers[msg.worker]);
     this._process();
@@ -204,9 +207,18 @@ Worker.prototype._exitProcess = function (){
     this.phantom.exit()
 }
 
+Worker.prototype._onAck = function(){
+    if (this._pageClicker >= this._workerDeath) {
+        this._exitProcess()
+    }
+}
+
 Worker.prototype._onMessage = function (msg) {
     if (is("object", msg, {}).ghost !== "town") {
         return;
+    }
+    if (is("object", msg, {}).ack) {
+        return this._onAck()
     }
     var ajaxClient = msg.data.ajaxClient;
     switch(ajaxClient){
@@ -240,9 +252,7 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
         err: err,
         data: data
     });
-    if (this._pageClicker >= this._workerDeath) {
-        this._exitProcess()
-    }
+    
 };
 
 module.exports = function (opts) {
