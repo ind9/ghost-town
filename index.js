@@ -54,8 +54,8 @@ Master.prototype._onTimeout = function (item) {
     delete this._items[item.id];
     
     if (item.retries === this._itemRetries) {
-        item.worker.kill(signal='SIGKILL')
         item.done(new Error("[ghost-town] max pageTries"));
+        item.worker.send("exit")
     } else {
         this.queue(item.data, true, item.done, item.retries + 1);
     }
@@ -192,6 +192,7 @@ var Worker = function (opts) {
     }.bind(this));
 
     process.on("message", this._onMessage.bind(this));
+    process.on("exit", this._exitProcess.bind(this));
     
     if (this._workerShift !== -1) {
         setTimeout(this._exitProcess.bind(this), this._workerShift);
@@ -214,6 +215,9 @@ Worker.prototype._onAck = function(){
 }
 
 Worker.prototype._onMessage = function (msg) {
+    if(msg === "exit"){
+        return this._exitProcess()
+    }
     if (is("object", msg, {}).ghost !== "town") {
         return;
     }
