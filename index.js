@@ -45,6 +45,9 @@ Master.prototype._onMessage = function (msg) {
 
     if(worker)
         worker.send({"ghost": "town","ack": true})
+
+    if(msg.end)
+        return
     
     this._workerQueue.push(cluster.workers[msg.worker]);
     this._process();
@@ -202,9 +205,15 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
-    if(this.nightmare && this.nightmare.end)
-        this.nightmare.end();
-    this.phantom.process.on("exit", process.exit)
+    this.phantom.process.on("exit", () => {
+        if(this.nightmare && this.nightmare.end){
+            console.log("kill nightmare")
+            this.nightmare.end().then(process.exit);
+        }
+        else{
+            process.exit()
+        }
+    })
     this.phantom.exit()
 }
 
@@ -254,7 +263,8 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
         worker: cluster.worker.id,
         id: id,
         err: err,
-        data: data
+        data: data,
+        end: (this._pageClicker >= this.__workerDeath)
     });
     
 };
