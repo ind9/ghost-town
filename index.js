@@ -195,7 +195,6 @@ var Worker = function (opts) {
     }.bind(this));
 
     process.on("message", this._onMessage.bind(this));
-    process.on("exit", this._exitProcess.bind(this));
     
     if (this._workerShift !== -1) {
         setTimeout(this._exitProcess.bind(this), this._workerShift);
@@ -205,13 +204,18 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
-    this.phantom.process.on("exit", () => {
-        if(this.nightmare && this.nightmare.end){
-            this.nightmare._endNow()
-        }
-        process.exit()
-    })
     this.phantom.exit()
+    this.phantom.process.on("exit", () => {
+        if(this.nightmare.proc){
+            this.nightmare.proc.on("exit", () => {
+                process.exit()
+            })
+            setInterval(this.nightmare._endNow.bind(this), 100)
+        }
+        else{
+            process.exit()
+        }
+    })
 }
 
 Worker.prototype._onAck = function(){
