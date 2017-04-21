@@ -2,6 +2,7 @@ var cluster = require("cluster");
 var events = require("events");
 var phantom = require("phantom");
 var Nightmare = require("nightmare");
+var shadowfax = require("shadowfax").default;
 
 var is = function (type, val, def) {
     return val !== null && typeof val === type ? val : def;
@@ -194,6 +195,10 @@ var Worker = function (opts) {
         }
     }.bind(this));
 
+    if(opts.shadowfaxFlags){
+        this.shadowfax = () => new shadowfax(opts.shadowfaxFlags)
+    }
+
     process.on("message", this._onMessage.bind(this));
     
     if (this._workerShift !== -1) {
@@ -236,6 +241,11 @@ Worker.prototype._onMessage = function (msg) {
     }
     var ajaxClient = msg.data.ajaxClient;
     switch(ajaxClient){
+        case 'shadowfax':
+            this._pageClicker++;
+            this._pages[msg.id] = this.shadowfax;
+            this.emit('queue', this.shadowfax, msg.data, this._done.bind(this, msg.id, 'shadowfax'));
+        break;
         case 'nightmare':
             this._pageClicker++;
             this._pages[msg.id] = this.nightmare;
@@ -255,7 +265,7 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
         return;
     }
 
-    if(ajaxClient != 'nightmare')
+    if(ajaxClient == 'phantom')
         this._pages[id].close();
     delete this._pages[id];
     
