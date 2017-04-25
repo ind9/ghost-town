@@ -211,7 +211,7 @@ Worker.prototype = Object.create(events.EventEmitter.prototype);
 Worker.prototype._exitProcess = function (){
     this.phantom.exit()
     this.phantom.process.on("exit", () => {
-        if(this.nightmare.proc){
+        if(this.nightmare && this.nightmare.proc){
             this.nightmare.proc.on("exit", () => {
                 process.exit()
             })
