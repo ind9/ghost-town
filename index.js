@@ -192,7 +192,8 @@ var Worker = function (opts) {
                 worker: cluster.worker.id
             });
         }
-    }.bind(this));
+    }.bind(this))
+    .catch(e => console.log(e));
 
     process.on("message", this._onMessage.bind(this));
     
@@ -204,16 +205,16 @@ var Worker = function (opts) {
 Worker.prototype = Object.create(events.EventEmitter.prototype);
 
 Worker.prototype._exitProcess = function (){
-    this.phantom.exit()
+    this.phantom.exit(0)
     this.phantom.process.on("exit", () => {
-        if(this.nightmare.proc){
+        if(this.nightmare && !this.nightmare.ended && this.nightmare.proc){
             this.nightmare.proc.on("exit", () => {
-                process.exit()
+                process.exit(0)
             })
             setInterval(this.nightmare._endNow.bind(this), 100)
         }
         else{
-            process.exit()
+            process.exit(0)
         }
     })
 }
@@ -246,7 +247,7 @@ Worker.prototype._onMessage = function (msg) {
                 this._pageClicker++;
                 this._pages[msg.id] = page;
                 this.emit("queue", page, msg.data, this._done.bind(this, msg.id, 'phantom'));
-            }.bind(this));
+            }.bind(this)).catch(e => console.log(e));
     }
 };
 
