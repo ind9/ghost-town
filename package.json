@@ -13,7 +13,7 @@
         "test": "mocha -R list -s 60s"
     },
     "dependencies": {
-        "phantom": "2.1.2",
+        "phantom": "2.1.21",
         "nightmare": "^2.5.3",
         "shadowfax": "0.0.13"
     },
