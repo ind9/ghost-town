@@ -345,9 +345,9 @@ if (cluster.isMaster) {
             async.times(100, function (n, next) {
                 town.queue(n % 2 ? (n / 100) : 101, function (err, val) {
                     if (n % 2) {
-                        if (err) {
+                        if (err && err.message != "[ghost-town] max pageTries") {
                             next(new Error("shouldn't have timed out"));
-                        } else if (val !== n / 100) {
+                        } else if (val && val !== n / 100) {
                             next(new Error("returned the wrong data"));
                         } else {
                             next();
