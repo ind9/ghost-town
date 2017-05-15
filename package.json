@@ -15,7 +15,7 @@
     "dependencies": {
         "phantom": "2.1.21",
         "nightmare": "^2.5.3",
-        "shadowfax": "0.0.22"
+        "shadowfax": "0.0.23"
     },
     "devDependencies": {
         "async": "~0.9.0",
