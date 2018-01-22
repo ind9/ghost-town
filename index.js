@@ -1,3 +1,4 @@
+var http2 = require("http2");
 var cluster = require("cluster");
 var events = require("events");
 var phantom = require("phantom");
@@ -183,6 +184,7 @@ var Worker = function (opts) {
         }
         
     }
+    this.http2 = http2
     phantom.create(flags).then(function (proc) {
         this.phantom = proc;
         
@@ -242,6 +244,10 @@ Worker.prototype._onMessage = function (msg) {
             this._pages[msg.id] = this.nightmare;
             this.emit("queue", this.nightmare, msg.data, this._done.bind(this, msg.id, 'nightmare'));
         break;
+        case 'http2':
+            this._pageClicker++;
+            this._pages[msg.id] = this.http2;
+            this.emit("queue", this.http2, msg.data, this._done.bind(this, msg.id, 'http2'));
         default:
             this.phantom.createPage().then(function (page) {
                 this._pageClicker++;
