@@ -263,7 +263,7 @@ Worker.prototype._done = function (id, ajaxClient, err, data) {
         return;
     }
 
-    if(ajaxClient != 'nightmare')
+    if(ajaxClient == 'phantom')
         this._pages[id].close();
     delete this._pages[id];
     
