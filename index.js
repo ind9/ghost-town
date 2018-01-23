@@ -248,6 +248,7 @@ Worker.prototype._onMessage = function (msg) {
             this._pageClicker++;
             this._pages[msg.id] = this.http2;
             this.emit("queue", this.http2, msg.data, this._done.bind(this, msg.id, 'http2'));
+        break;
         default:
             this.phantom.createPage().then(function (page) {
                 this._pageClicker++;
